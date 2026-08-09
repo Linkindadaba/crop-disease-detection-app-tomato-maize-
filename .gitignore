@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+image-recog/
+py_env/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Project temporary backups
+*_backup.docx
+
+# Flutter build / tool artifacts if in same repo
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
