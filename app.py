@@ -675,6 +675,32 @@ elif page == "Batch Accuracy Evaluation":
 
 # --- PAGE 3: THESIS CHAPTERS HUB ---
 elif page == "Thesis Chapters Hub":
+    if "fullscreen_thesis" not in st.session_state:
+        st.session_state.fullscreen_thesis = False
+
+    # Inject Fullscreen CSS when enabled
+    if st.session_state.fullscreen_thesis:
+        st.markdown("""
+        <style>
+        section[data-testid="stSidebar"] {
+            display: none !important;
+        }
+        .main .block-container {
+            max-width: 98% !important;
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+        }
+        header[data-testid="stHeader"] {
+            display: none !important;
+        }
+        footer {
+            display: none !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     st.markdown("<h1 class='main-title'>Thesis Chapters Hub</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>Preview and download the completed Chapters 1 to 5 compiled dynamically from your Word report.</p>", unsafe_allow_html=True)
     
@@ -693,7 +719,15 @@ elif page == "Thesis Chapters Hub":
             )
             
         st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown("<h3>Chapter Preview</h3>", unsafe_allow_html=True)
+        
+        top_c1, top_c2 = st.columns([3, 1])
+        with top_c1:
+            st.markdown("<h3>Chapter Preview</h3>", unsafe_allow_html=True)
+        with top_c2:
+            fs_top_label = "Exit Fullscreen" if st.session_state.fullscreen_thesis else "Fullscreen Mode"
+            if st.button(fs_top_label, width="stretch", key="fs_thesis_top_btn"):
+                st.session_state.fullscreen_thesis = not st.session_state.fullscreen_thesis
+                st.rerun()
         
         # Define Chapters list
         chapters_list = [
@@ -1069,6 +1103,11 @@ elif page == "Thesis Chapters Hub":
             with nav_col1:
                 if st.session_state.chapter_index > 0:
                     st.button("Previous Chapter", width="stretch", on_click=go_prev)
+            with nav_col2:
+                fs_bot_label = "Exit Fullscreen" if st.session_state.fullscreen_thesis else "Fullscreen Mode"
+                if st.button(fs_bot_label, width="stretch", key="fs_thesis_bot_btn"):
+                    st.session_state.fullscreen_thesis = not st.session_state.fullscreen_thesis
+                    st.rerun()
             with nav_col3:
                 if st.session_state.chapter_index < len(chapters_list) - 1:
                     st.button("Next Chapter", width="stretch", on_click=go_next)
