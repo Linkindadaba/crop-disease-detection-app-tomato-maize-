@@ -1081,6 +1081,32 @@ elif page == "Thesis Chapters Hub":
 
 # --- PAGE 4: PROJECT PRESENTATION SLIDES ---
 elif page == "Project Presentation Slides":
+    if "fullscreen_slides" not in st.session_state:
+        st.session_state.fullscreen_slides = False
+
+    # Inject Fullscreen CSS when enabled
+    if st.session_state.fullscreen_slides:
+        st.markdown("""
+        <style>
+        section[data-testid="stSidebar"] {
+            display: none !important;
+        }
+        .main .block-container {
+            max-width: 98% !important;
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+        }
+        header[data-testid="stHeader"] {
+            display: none !important;
+        }
+        footer {
+            display: none !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     st.markdown("<h1 class='main-title'>Project Presentation Deck</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>Interactive presentation deck summarizing technical research, methodology, empirical results, and software implementation.</p>", unsafe_allow_html=True)
     
@@ -1119,7 +1145,7 @@ elif page == "Project Presentation Slides":
 
     # Slide Top Navigation Bar
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1, 3, 1])
+    ctrl_col1, ctrl_col2, ctrl_col3, ctrl_col4 = st.columns([1, 2.5, 1, 1.2])
     
     with ctrl_col1:
         if st.session_state.slide_index > 0:
@@ -1136,6 +1162,12 @@ elif page == "Project Presentation Slides":
     with ctrl_col3:
         if st.session_state.slide_index < len(slides_list) - 1:
             st.button("Next Slide", width="stretch", on_click=next_slide)
+
+    with ctrl_col4:
+        fs_button_label = "Exit Fullscreen" if st.session_state.fullscreen_slides else "Fullscreen Mode"
+        if st.button(fs_button_label, width="stretch", key="fullscreen_toggle_btn"):
+            st.session_state.fullscreen_slides = not st.session_state.fullscreen_slides
+            st.rerun()
             
     # Progress Bar
     progress_val = int(((st.session_state.slide_index + 1) / len(slides_list)) * 100)
