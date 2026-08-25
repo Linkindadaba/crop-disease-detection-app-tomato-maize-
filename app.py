@@ -371,6 +371,16 @@ else:
     else:
         st.sidebar.error("Failed to load TFLite model.")
 
+st.sidebar.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
+conf_threshold = st.sidebar.slider(
+    "Diagnostic Confidence Threshold (%):",
+    min_value=50,
+    max_value=95,
+    value=80,
+    step=5,
+    help="Higher threshold boosts app accuracy and precision by rejecting low-confidence, blurry, or out-of-distribution leaf scans."
+)
+
 # --- PAGE 1: SINGLE LEAF DIAGNOSIS ---
 if page == "Single Leaf Diagnosis":
     st.markdown("<h1 class='main-title'>Crop Disease Diagnostic Sandbox</h1>", unsafe_allow_html=True)
@@ -439,20 +449,37 @@ if page == "Single Leaf Diagnosis":
                     # Display top predictions
                     top_indices = np.argsort(preds)[::-1][:3]
                     top_class = CLASS_NAMES[pred_class_idx]
-                    top_conf = preds[pred_class_idx] * 100
+                    top_conf = float(preds[pred_class_idx] * 100)
                     
-                    # Main Result Badge
-                    is_healthy = "healthy" in top_class.lower()
-                    color = "#2ecc71" if is_healthy else "#e74c3c"
-                    badge_text = "HEALTHY CROP" if is_healthy else "DISEASE DETECTED"
-                    
-                    st.markdown(f"""
-                    <div style='background-color: {color}15; border-left: 6px solid {color}; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                        <span style='color: {color}; font-weight: bold; font-size: 0.9rem;'>{badge_text}</span>
-                        <h4 style='margin: 5px 0 0 0; color: #2c3e50;'>{CLEAN_CLASS_NAMES[pred_class_idx]}</h4>
-                        <span style='font-size: 1.8rem; font-weight: 800; color: #2c3e50;'>{top_conf:.1f}%</span> <span style='color: #7f8c8d;'>confidence</span>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    # Check against selected confidence threshold
+                    if top_conf < conf_threshold:
+                        st.markdown(f"""
+                        <div style='background-color: #fff3e0; border-left: 6px solid #f57c00; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+                            <span style='color: #e65100; font-weight: bold; font-size: 0.95rem;'>⚠️ UNCERTAIN / LOW CONFIDENCE DIAGNOSIS ({top_conf:.1f}% < {conf_threshold}%)</span>
+                            <h4 style='margin: 5px 0 0 0; color: #2c3e50;'>Tentative: {CLEAN_CLASS_NAMES[pred_class_idx]}</h4>
+                            <p style='margin: 8px 0 0 0; color: #555; font-size: 0.88rem;'>
+                                Diagnostic confidence is below your safety threshold (<b>{conf_threshold}%</b>). To prevent false positives from glare, blur, or noisy backgrounds:
+                            </p>
+                            <ul style='margin-top: 4px; color: #666; font-size: 0.85rem; line-height: 1.4;'>
+                                <li>Reposition camera closer to a single diseased leaf spot.</li>
+                                <li>Ensure bright, indirect natural lighting without direct specular glare.</li>
+                                <li>Or lower the confidence slider in the sidebar if inspecting subtle early-stage lesions.</li>
+                            </ul>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        # Main Result Badge
+                        is_healthy = "healthy" in top_class.lower()
+                        color = "#2ecc71" if is_healthy else "#e74c3c"
+                        badge_text = "HEALTHY CROP" if is_healthy else "DISEASE DETECTED"
+                        
+                        st.markdown(f"""
+                        <div style='background-color: {color}15; border-left: 6px solid {color}; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+                            <span style='color: {color}; font-weight: bold; font-size: 0.9rem;'>{badge_text}</span>
+                            <h4 style='margin: 5px 0 0 0; color: #2c3e50;'>{CLEAN_CLASS_NAMES[pred_class_idx]}</h4>
+                            <span style='font-size: 1.8rem; font-weight: 800; color: #2c3e50;'>{top_conf:.1f}%</span> <span style='color: #7f8c8d;'>confidence</span>
+                        </div>
+                        """, unsafe_allow_html=True)
                     
                     # Progress Bars for top 3
                     st.markdown("<h4>Probability Distribution</h4>", unsafe_allow_html=True)
