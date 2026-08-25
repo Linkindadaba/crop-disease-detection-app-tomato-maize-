@@ -1480,7 +1480,7 @@ elif page == "Defense Practice Quiz":
     st.markdown("<h1 class='main-title'>Thesis Defense Practice & Quiz Hub</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>Prepare for your thesis examination with tough panel questions, structured model answers, and an interactive mock quiz.</p>", unsafe_allow_html=True)
     
-    quiz_tab1, quiz_tab2 = st.tabs(["Panel Q&A Master Repository", "Interactive Mock Defense Quiz"])
+    quiz_tab1, quiz_tab2, quiz_tab3 = st.tabs(["Panel Q&A Master Repository", "Interactive Mock Defense Quiz", "Group Team Study Guide"])
     
     with quiz_tab1:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
@@ -1737,4 +1737,97 @@ elif page == "Defense Practice Quiz":
             else:
                 st.error(f"📚 **Defense Readiness Score: {score}/5 ({percent:.0f}%) — Needs Review. Study the Master Q&A Repository tab before defense.**")
                 
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with quiz_tab3:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.markdown("<h3>Group Member Study Guide & Key Terms Panel</h3>", unsafe_allow_html=True)
+        st.markdown("Use this comprehensive guide to align all 4 project members before your final presentation.")
+        
+        st.markdown("#### 1. Executive Summary (What We Built)")
+        st.markdown("""
+        Our project solves a critical agricultural problem in Ghana: **smallholder tomato and maize farmers lose up to 40% of crop yields to diseases (e.g. Early Blight, Late Blight, Northern Leaf Blight, Rust)** because traditional expert diagnosis is slow, expensive, and requires internet access that rural farms lack.
+        
+        We built an **offline-first AI mobile application** using a novel **Triplet Attention-Enhanced EfficientNet-B0 architecture**. The system is quantized to **5.1 MB**, runs in **92 ms** on budget smartphones without internet, provides **Grad-CAM visual heatmaps** to explain predictions, and achieved a **76.5 (Grade A) System Usability Scale (SUS)** rating during field testing.
+        """)
+        
+        st.markdown("#### 2. Key Terms & Acronyms Dictionary")
+        st.markdown("""
+        | Term / Acronym | Full Name | Plain English Definition |
+        |---|---|---|
+        | **CNN** | Convolutional Neural Network | A deep learning model specialized for processing grid-like visual data (images). |
+        | **EfficientNet-B0** | Efficient Network (Base Version) | A lightweight CNN backbone that uniformly scales depth, width, and resolution using compound scaling. |
+        | **Triplet Attention** | Triplet Attention Mechanism | A zero-parameter-reduction attention module that captures spatial-channel interactions across 3 parallel tensor dimensions. |
+        | **Transfer Learning** | Pre-trained Weight Adaptation | A technique where a model pre-trained on 1.4 million ImageNet photos is fine-tuned on our 21,394 plant leaf images. |
+        | **PTQ INT8** | Post-Training INT8 Quantization | A compression technique that converts 32-bit floating point weights into 8-bit integers, shrinking model size by 74.8%. |
+        | **TFLite** | TensorFlow Lite | A lightweight runtime engine used to execute AI models directly on mobile devices (Android/iOS). |
+        | **Grad-CAM** | Gradient-weighted Class Activation Mapping | An Explainable AI (XAI) technique that generates visual color heatmaps showing where the AI focused on the leaf. |
+        | **XAI** | Explainable Artificial Intelligence | Methods that make AI decisions transparent, understandable, and trustworthy for non-expert human users. |
+        | **SUS** | System Usability Scale | A standardized 10-item Likert survey used to quantify software usability (0-100 scale). |
+        | **SQLite** | Structured Query Language Lite | A self-contained, serverless database engine embedded inside the Flutter app for offline history logging. |
+        """)
+        
+        st.markdown("#### 3. Core Technical Methods Explained")
+        
+        with st.expander("Method 1: EfficientNet-B0 Compound Scaling"):
+            st.markdown("""
+            - **What it is**: Traditional CNNs scale depth ($d$), width ($w$), or resolution ($r$) arbitrarily. EfficientNet uses a compound coefficient $\\phi$ where:
+              $$\\text{Depth } d = \\alpha^\\phi, \\quad \\text{Width } w = \\beta^\\phi, \\quad \\text{Resolution } r = \\gamma^\\phi$$
+              subject to $\\alpha \\cdot \\beta^2 \\cdot \\gamma^2 \\approx 2$.
+            - **Why we used it**: It achieves 98.24% baseline accuracy with only **5.3 million parameters (20.3 MB FP32)**, compared to ResNet-50 which requires 25.6M parameters (98 MB).
+            """)
+            
+        with st.expander("Method 2: Triplet Attention Module"):
+            st.markdown("""
+            - **What it is**: It uses 3 parallel branches to capture dependencies across tensor dimensions:
+              1. **Branch 1**: $(C, H)$ spatial-channel interaction.
+              2. **Branch 2**: $(C, W)$ spatial-channel interaction.
+              3. **Branch 3**: $(H, W)$ spatial attention.
+            - **Why we used it**: Squeeze-and-Excitation (SE) attention discards spatial details via global pooling. Triplet Attention preserves fine-grained lesion spots (pustules, chlorosis) without channel bottleneck loss.
+            """)
+
+        with st.expander("Method 3: 2-Phase Transfer Learning"):
+            st.markdown("""
+            - **Phase 1 (Head Training)**: Freeze backbone, train custom classifier head for 5 epochs at $\\eta = 10^{-3}$.
+            - **Phase 2 (Fine-Tuning)**: Unfreeze top MBConv blocks, fine-tune end-to-end for 15 epochs at $\\eta = 10^{-5}$.
+            - **Why we used it**: Prevents catastrophic forgetting of low-level visual edges while adapting high-level features to tomato and maize pathologies.
+            """)
+
+        with st.expander("Method 4: INT8 Post-Training Quantization (PTQ)"):
+            st.markdown("""
+            - **What it is**: Converts 32-bit floats to 8-bit signed integers: $r = S \\cdot (q - Z)$.
+            - **Why we used it**: Reduces model size by **74.8% (20.3 MB $\\to$ 5.1 MB)** and latency by **70.3% (310 ms $\\to$ 92 ms)** while retaining **97.85% accuracy** (only 0.39% trade-off).
+            """)
+
+        with st.expander("Method 5: Grad-CAM Visual Explainability"):
+            st.markdown("""
+            - **What it is**: Computes gradient weights $\\alpha_k^c = \\frac{1}{Z} \\sum \\frac{\\partial y^c}{\\partial A^k}$ and generates heatmap $L^c = \\text{ReLU}(\\sum \\alpha_k^c A^k)$.
+            - **Why we used it**: Proves the model targets actual leaf lesions rather than background noise (soil, shadows, hands), building trust with agricultural officers.
+            """)
+
+        st.markdown("#### 4. Master Numbers to Memorize")
+        st.markdown("""
+        | Metric | Value | Meaning / Context |
+        |---|---|---|
+        | **Dataset Size** | **21,394 images** | 14 classes across Tomato (10) and Maize (4). |
+        | **Dataset Split** | **80% / 10% / 10%** | Stratified split: 17,115 train, 2,139 val, 2,140 test. |
+        | **FP32 Accuracy** | **98.24%** | Unquantized full model accuracy (20.3 MB). |
+        | **INT8 Accuracy** | **97.85%** | Quantized model accuracy (5.1 MB). |
+        | **Compression Ratio**| **74.8%** | Size reduction from 20.3 MB to 5.1 MB. |
+        | **Mobile Latency** | **92 ms** | Execution time on mobile CPU (down from 310 ms). |
+        | **SUS Score** | **76.5 / 100** | Grade A ("Good to Excellent") field usability score. |
+        | **Participants** | **15 participants** | 10 smallholder farmers + 5 extension officers. |
+        """)
+        
+        st.markdown("#### 5. Team Member Role Responsibilities")
+        st.markdown("""
+        * **Ntiamoah Prince Agyei** *(DevOps & Model Deployment Engineer)*:
+          * **Focus**: TFLite export, INT8 quantization benchmarks, Streamlit Cloud deployment, mobile CPU latency optimization.
+        * **Adjei Sarfo Joseph** *(Lead AI & Machine Learning Researcher)*:
+          * **Focus**: EfficientNet-B0 backbone, Triplet Attention equations, 2-phase learning rate schedules, accuracy loss curves.
+        * **Abdul Wasiu Abubakr** *(Full-Stack & Mobile Software Engineer)*:
+          * **Focus**: Flutter application UI screens, `tflite_flutter` C++ dynamic binding, embedded SQLite (`sqflite`) database logging.
+        * **Lomotey Nathaniel Julian** *(Data Engineer & XAI Evaluation Specialist)*:
+          * **Focus**: Dataset preprocessing/augmentation, Grad-CAM heatmap generation, confusion matrices, System Usability Scale (SUS) survey analysis.
+        """)
         st.markdown("</div>", unsafe_allow_html=True)
