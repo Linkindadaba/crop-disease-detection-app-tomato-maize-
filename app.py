@@ -344,7 +344,7 @@ def compute_gradcam(img_tensor, model):
 st.sidebar.markdown("<h2 style='text-align: center; color: #2ecc71;'>Sandbox Menu</h2>", unsafe_allow_html=True)
 page = st.sidebar.radio(
     "Go To:",
-    ["Single Leaf Diagnosis", "Batch Accuracy Evaluation", "Thesis Chapters Hub", "Project Presentation Slides", "Defense Practice Quiz"]
+    ["Single Leaf Diagnosis", "Batch Accuracy Evaluation", "Thesis Chapters Hub", "Project Presentation Slides", "Defense Practice Quiz", "SUS Usability Survey & Analytics"]
 )
 
 model_backend = st.sidebar.selectbox(
@@ -1857,4 +1857,196 @@ elif page == "Defense Practice Quiz":
         * **Lomotey Nathaniel Julian** *(Data Engineer & XAI Evaluation Specialist)*:
           * **Focus**: Dataset preprocessing/augmentation, Grad-CAM heatmap generation, confusion matrices, System Usability Scale (SUS) survey analysis.
         """)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# --- PAGE 6: SUS USABILITY SURVEY & LIVE ANALYTICS ---
+elif page == "SUS Usability Survey & Analytics":
+    st.markdown("<h1 class='main-title'>System Usability Scale (SUS) Survey & Live Analytics</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>Gather real participant usability feedback using John Brooke's (1996) standard 10-item instrument and analyze real-time evaluation metrics.</p>", unsafe_allow_html=True)
+    
+    sus_csv_path = BASE_DIR / "sus_responses.csv"
+    
+    sus_tab1, sus_tab2 = st.tabs(["Submit New SUS Response", "Live Analytics & Visual Dashboard"])
+    
+    with sus_tab1:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.markdown("<h3>Participant Information</h3>", unsafe_allow_html=True)
+        
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            p_id = st.text_input("Participant ID / Name:", value=f"P{datetime.now().strftime('%M%S')}")
+        with c2:
+            p_role = st.selectbox("Role / Occupation:", ["Smallholder Farmer", "Extension Officer", "Researcher / Academic", "Student"])
+        with c3:
+            p_exp = st.selectbox("Software Experience Level:", ["Beginner", "Intermediate", "Expert"])
+            
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown("<h3>John Brooke (1996) 10-Item Likert Questionnaire</h3>", unsafe_allow_html=True)
+        st.markdown("Please rate your agreement with each statement from **1 (Strongly Disagree)** to **5 (Strongly Agree)**.")
+        
+        likert_opts = [1, 2, 3, 4, 5]
+        
+        sq1 = st.radio("1. I think that I would like to use this system frequently.", likert_opts, index=3, horizontal=True, key="sq1")
+        sq2 = st.radio("2. I found the system unnecessarily complex.", likert_opts, index=1, horizontal=True, key="sq2")
+        sq3 = st.radio("3. I thought the system was easy to use.", likert_opts, index=3, horizontal=True, key="sq3")
+        sq4 = st.radio("4. I think that I would need the support of a technical person to be able to use this system.", likert_opts, index=1, horizontal=True, key="sq4")
+        sq5 = st.radio("5. I found the various functions in this system were well integrated.", likert_opts, index=3, horizontal=True, key="sq5")
+        sq6 = st.radio("6. I thought there was too much inconsistency in this system.", likert_opts, index=1, horizontal=True, key="sq6")
+        sq7 = st.radio("7. I would imagine that most people would learn to use this system very quickly.", likert_opts, index=3, horizontal=True, key="sq7")
+        sq8 = st.radio("8. I found the system very cumbersome to use.", likert_opts, index=1, horizontal=True, key="sq8")
+        sq9 = st.radio("9. I felt very confident using the system.", likert_opts, index=3, horizontal=True, key="sq9")
+        sq10 = st.radio("10. I needed to learn a lot of things before I could get going with this system.", likert_opts, index=1, horizontal=True, key="sq10")
+        
+        if st.button("Calculate & Submit SUS Response", key="submit_sus_btn"):
+            # Compute Brooke (1996) SUS Score
+            # Odd items: score - 1
+            # Even items: 5 - score
+            odd_sum = (sq1 - 1) + (sq3 - 1) + (sq5 - 1) + (sq7 - 1) + (sq9 - 1)
+            even_sum = (5 - sq2) + (5 - sq4) + (5 - sq6) + (5 - sq8) + (5 - sq10)
+            calculated_sus = (odd_sum + even_sum) * 2.5
+            
+            # Determine Bangor et al. (2008) Grade
+            if calculated_sus >= 84.1:
+                grade = "Grade A+ (Best Imaginable)"
+            elif calculated_sus >= 80.3:
+                grade = "Grade A (Excellent)"
+            elif calculated_sus >= 68.0:
+                grade = "Grade B / A- (Good)"
+            elif calculated_sus >= 51.0:
+                grade = "Grade C / D (Fair)"
+            else:
+                grade = "Grade F (Poor)"
+                
+            # Append to CSV
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            new_row = {
+                "participant_id": p_id,
+                "role": p_role,
+                "experience": p_exp,
+                "q1": sq1, "q2": sq2, "q3": sq3, "q4": sq4, "q5": sq5,
+                "q6": sq6, "q7": sq7, "q8": sq8, "q9": sq9, "q10": sq10,
+                "sus_score": calculated_sus,
+                "timestamp": now_str
+            }
+            
+            import pandas as pd
+            if sus_csv_path.exists():
+                df_sus = pd.read_csv(sus_csv_path)
+                df_sus = pd.concat([df_sus, pd.DataFrame([new_row])], ignore_index=True)
+            else:
+                df_sus = pd.DataFrame([new_row])
+                
+            df_sus.to_csv(sus_csv_path, index=False)
+            
+            st.balloons()
+            st.markdown(f"""
+            <div style='background-color: #e8f5e9; border-left: 6px solid #2e7d32; padding: 20px; border-radius: 12px; margin-top: 15px;'>
+                <h3 style='color: #1b5e20; margin: 0;'>Response Recorded Successfully!</h3>
+                <h1 style='color: #2e7d32; margin: 5px 0;'>SUS Score: {calculated_sus:.1f} / 100</h1>
+                <span style='background:#2e7d32; color:white; padding:4px 12px; border-radius:6px; font-weight:bold;'>{grade}</span>
+                <p style='margin-top: 10px; color: #555;'>Participant ID: <b>{p_id}</b> | Role: <b>{p_role}</b> | Time: <b>{now_str}</b></p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+    with sus_tab2:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.markdown("<h3>Real Live Data Analytics & Usability Metrics</h3>", unsafe_allow_html=True)
+        
+        import pandas as pd
+        if sus_csv_path.exists():
+            df_live = pd.read_csv(sus_csv_path)
+            
+            if not df_live.empty:
+                avg_score = df_live["sus_score"].mean()
+                total_n = len(df_live)
+                max_score = df_live["sus_score"].max()
+                min_score = df_live["sus_score"].min()
+                
+                # Overall Grade
+                if avg_score >= 84.1: overall_grade = "Grade A+"
+                elif avg_score >= 80.3: overall_grade = "Grade A"
+                elif avg_score >= 68.0: overall_grade = "Grade B / A-"
+                elif avg_score >= 51.0: overall_grade = "Grade C"
+                else: overall_grade = "Grade F"
+                
+                # Top KPI Cards
+                k1, k2, k3, k4 = st.columns(4)
+                with k1:
+                    st.metric("Total Responses", f"{total_n}")
+                with k2:
+                    st.metric("Mean SUS Score", f"{avg_score:.1f} / 100")
+                with k3:
+                    st.metric("Bangor Usability Grade", overall_grade)
+                with k4:
+                    st.metric("Score Range", f"{min_score:.0f} - {max_score:.0f}")
+                    
+                st.markdown("<hr>", unsafe_allow_html=True)
+                
+                # Visual Charts
+                col_ch1, col_ch2 = st.columns(2)
+                
+                with col_ch1:
+                    st.markdown("#### SUS Score Distribution Histogram")
+                    fig, ax = plt.subplots(figsize=(6, 4))
+                    sns.histplot(df_live["sus_score"], kde=True, bins=8, color="#2e7d32", ax=ax)
+                    ax.axvline(avg_score, color="#e74c3c", linestyle="--", linewidth=2, label=f"Mean: {avg_score:.1f}")
+                    ax.set_xlabel("SUS Score (0 - 100)")
+                    ax.set_ylabel("Participant Count")
+                    ax.legend()
+                    st.pyplot(fig)
+                    plt.close(fig)
+                    
+                with col_ch2:
+                    st.markdown("#### Mean SUS Score by User Role")
+                    role_grp = df_live.groupby("role")["sus_score"].mean().reset_index()
+                    fig, ax = plt.subplots(figsize=(6, 4))
+                    sns.barplot(data=role_grp, x="role", y="sus_score", palette="Greens_d", ax=ax)
+                    ax.set_ylim(0, 100)
+                    ax.set_ylabel("Mean SUS Score")
+                    ax.set_xlabel("Participant Role")
+                    for p in ax.patches:
+                        ax.annotate(f"{p.get_height():.1f}", (p.get_x() + p.get_width() / 2., p.get_height() - 8),
+                                    ha='center', va='center', color='white', fontweight='bold')
+                    st.pyplot(fig)
+                    plt.close(fig)
+                    
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown("#### Item-by-Item (Q1 - Q10) Likert Means")
+                q_cols = [f"q{i}" for i in range(1, 11)]
+                q_means = df_live[q_cols].mean()
+                
+                q_labels = [
+                    "Q1: Want frequent use", "Q2: Complex", "Q3: Easy to use", "Q4: Tech support needed",
+                    "Q5: Functions integrated", "Q6: Inconsistent", "Q7: Quick to learn", "Q8: Cumbersome",
+                    "Q9: Confident using", "Q10: Much learning needed"
+                ]
+                
+                fig, ax = plt.subplots(figsize=(10, 4.5))
+                bars = ax.barh(q_labels, q_means.values, color=["#2e7d32" if i%2==0 else "#e65100" for i in range(10)])
+                ax.set_xlim(1, 5)
+                ax.set_xlabel("Mean Likert Score (1 = Strongly Disagree, 5 = Strongly Agree)")
+                for bar in bars:
+                    w = bar.get_width()
+                    ax.text(w + 0.05, bar.get_y() + bar.get_height()/2, f"{w:.2f}", va='center', fontweight='bold')
+                st.pyplot(fig)
+                plt.close(fig)
+                
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown("#### Live Submissions Data Table")
+                st.dataframe(df_live, use_container_width=True)
+                
+                csv_data = df_live.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Export All Live SUS Data (.csv)",
+                    data=csv_data,
+                    file_name="sus_live_evaluation_data.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.info("No SUS responses collected yet. Use Tab 1 to submit responses.")
+        else:
+            st.info("No responses file found. Submit a response in Tab 1 to initialize dataset.")
+            
         st.markdown("</div>", unsafe_allow_html=True)

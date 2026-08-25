@@ -1,0 +1,16 @@
+participant_id,role,experience,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,sus_score,timestamp
+P01,Extension Officer,Expert,5,2,4,1,4,2,5,1,5,2,87.5,2026-08-01 10:15:00
+P02,Smallholder Farmer,Intermediate,4,2,4,2,4,2,4,2,4,2,75.0,2026-08-01 10:45:00
+P03,Smallholder Farmer,Beginner,4,3,4,2,4,2,4,3,4,2,70.0,2026-08-01 11:20:00
+P04,Extension Officer,Expert,5,1,5,1,5,1,5,2,4,1,92.5,2026-08-01 12:00:00
+P05,Smallholder Farmer,Intermediate,4,2,5,2,4,2,4,2,4,2,77.5,2026-08-01 13:10:00
+P06,Smallholder Farmer,Beginner,3,3,4,3,4,2,4,3,4,3,67.5,2026-08-01 14:00:00
+P07,Extension Officer,Expert,5,2,4,2,4,1,5,2,5,2,85.0,2026-08-01 14:30:00
+P08,Smallholder Farmer,Intermediate,4,2,4,2,4,2,4,2,4,2,75.0,2026-08-01 15:15:00
+P09,Smallholder Farmer,Beginner,4,3,4,3,3,2,4,3,4,3,67.5,2026-08-01 15:50:00
+P10,Extension Officer,Expert,5,1,4,2,5,2,5,1,4,2,87.5,2026-08-01 16:30:00
+P11,Smallholder Farmer,Intermediate,4,2,4,2,4,2,4,2,4,2,75.0,2026-08-02 09:10:00
+P12,Smallholder Farmer,Beginner,4,3,4,2,4,3,4,3,3,2,67.5,2026-08-02 10:05:00
+P13,Extension Officer,Expert,4,2,5,1,4,2,5,2,5,2,85.0,2026-08-02 11:15:00
+P14,Smallholder Farmer,Intermediate,4,2,4,2,4,2,4,2,4,2,75.0,2026-08-02 13:40:00
+P15,Smallholder Farmer,Beginner,4,2,5,2,4,2,4,2,5,2,80.0,2026-08-02 15:00:00
