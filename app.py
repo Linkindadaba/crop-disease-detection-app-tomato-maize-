@@ -344,7 +344,7 @@ def compute_gradcam(img_tensor, model):
 st.sidebar.markdown("<h2 style='text-align: center; color: #2ecc71;'>Sandbox Menu</h2>", unsafe_allow_html=True)
 page = st.sidebar.radio(
     "Go To:",
-    ["Single Leaf Diagnosis", "Batch Accuracy Evaluation", "Thesis Chapters Hub", "Project Presentation Slides"]
+    ["Single Leaf Diagnosis", "Batch Accuracy Evaluation", "Thesis Chapters Hub", "Project Presentation Slides", "Defense Practice Quiz"]
 )
 
 model_backend = st.sidebar.selectbox(
@@ -1474,3 +1474,267 @@ elif page == "Project Presentation Slides":
     with b_col3:
         if st.session_state.slide_index < len(slides_list) - 1:
             st.button("Next Slide", key="b_next", width="stretch", on_click=next_slide)
+
+# --- PAGE 5: DEFENSE PRACTICE QUIZ & PANEL Q&A ---
+elif page == "Defense Practice Quiz":
+    st.markdown("<h1 class='main-title'>Thesis Defense Practice & Quiz Hub</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>Prepare for your thesis examination with tough panel questions, structured model answers, and an interactive mock quiz.</p>", unsafe_allow_html=True)
+    
+    quiz_tab1, quiz_tab2 = st.tabs(["Panel Q&A Master Repository", "Interactive Mock Defense Quiz"])
+    
+    with quiz_tab1:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.markdown("<h3>Top Defense Questions Panel Might Ask</h3>", unsafe_allow_html=True)
+        st.markdown("Review model answers, defense strategies, key empirical numbers, and mathematical justifications categorized by thesis domain.")
+        
+        cat_filter = st.selectbox(
+            "Filter Questions by Domain:",
+            [
+                "All Categories",
+                "1. AI Architecture & Triplet Attention",
+                "2. Model Quantization & Edge Mobile Optimization",
+                "3. Explainable AI (Grad-CAM) & Model Trust",
+                "4. Datasets, Augmentation & Generalization",
+                "5. Software Architecture & System Usability (SUS)"
+            ]
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Q1
+        if cat_filter in ["All Categories", "1. AI Architecture & Triplet Attention"]:
+            with st.expander("Q1 [Panel Favorite]: Why EfficientNet-B0 over deeper backbones like ResNet-50 or Vision Transformers (ViT)?"):
+                st.markdown("""
+                **Difficulty Level**: High Risk  
+                **Core Question**: Why did you choose EfficientNet-B0 instead of ResNet-50, VGG-16, or Vision Transformers?
+                
+                #### Model Defense Answer:
+                > *"EfficientNet-B0 uses compound scaling to uniformly scale network depth ($d$), width ($w$), and image resolution ($r$) using a fixed ratio: $d \\cdot w^2 \\cdot r^2 \\approx 2$. ResNet-50 has 25.6 million parameters (~98 MB FP32), and VGG-16 has 138 million parameters (~500 MB), whereas EfficientNet-B0 has only 5.3 million parameters (~20.3 MB FP32).*
+                > 
+                > *Because our primary deployment target is **offline execution on budget Android smartphones in low-connectivity agricultural areas**, EfficientNet-B0 provides an optimal trade-off: high spatial feature representation per parameter with 4.7x fewer parameters than ResNet-50, preventing memory crashes during TFLite initialization."*
+                
+                **Key Numbers to Quote**:
+                - EfficientNet-B0 FP32 size: **20.3 MB** (5.3M parameters)
+                - ResNet-50 size: **98 MB** (25.6M parameters)
+                - Baseline Accuracy: **98.24%**
+                """)
+                
+        # Q2
+        if cat_filter in ["All Categories", "1. AI Architecture & Triplet Attention"]:
+            with st.expander("Q2 [Panel Favorite]: How does Triplet Attention work, and why is it superior to SE or CBAM?"):
+                st.markdown("""
+                **Difficulty Level**: High Risk  
+                **Core Question**: What is the Triplet Attention Mechanism, and why not use Squeeze-and-Excitation (SE) or CBAM?
+                
+                #### Model Defense Answer:
+                > *"Standard Squeeze-and-Excitation (SE) attention computes only channel attention via global average pooling. CBAM computes channel and spatial attention sequentially, but relies on heavy channel dimensionality reduction ($C/r$) which loses fine-grained spatial information.*
+                > 
+                > *Triplet Attention captures cross-dimension interactions without any dimensionality reduction using three parallel branches:*
+                > 1. *Branch 1: Rotates input tensor to $(H, C, W)$ to capture $(C, H)$ spatial-channel interaction.*
+                > 2. *Branch 2: Rotates input tensor to $(W, H, C)$ to capture $(C, W)$ spatial-channel interaction.*
+                > 3. *Branch 3: Standard spatial attention $(H, W)$ via 7x7 convolution.*
+                > 
+                > *Outputs are averaged, preserving fine-grained leaf pathology structures (rust pustules, chlorotic spots) with zero channel bottlenecks and only a negligible parameter addition (+0.05M params)."*
+                
+                **Key Math / Formula**:
+                - Triplet Output: $y = \\frac{1}{3} \\left( \\hat{\\chi}_1 + \\hat{\\chi}_2 + \\hat{\\chi}_3 \\right)$
+                """)
+
+        # Q3
+        if cat_filter in ["All Categories", "1. AI Architecture & Triplet Attention"]:
+            with st.expander("Q3: Why use a 2-Phase Transfer Learning strategy instead of end-to-end training from epoch 1?"):
+                st.markdown("""
+                **Difficulty Level**: Medium  
+                **Core Question**: Why split training into two phases?
+                
+                #### Model Defense Answer:
+                > *"Training from scratch on 21,394 images risks overfitting or gradient explosion because the classification head weights are randomly initialized.*
+                > 
+                > *In **Phase 1**, we freeze the ImageNet-pretrained EfficientNet backbone and train only the newly attached dense classification head at a higher learning rate ($\\eta = 10^{-3}$) for 5 epochs to reach stability.*
+                > *In **Phase 2**, we unfreeze the top MBConv blocks and fine-tune the entire network at a low learning rate ($\\eta = 10^{-5}$) for 15 epochs. This prevents 'catastrophic forgetting' of general edge/texture visual primitives while specializing upper layers to plant lesion patterns."*
+                """)
+
+        # Q4
+        if cat_filter in ["All Categories", "2. Model Quantization & Edge Mobile Optimization"]:
+            with st.expander("Q4 [Panel Favorite]: Why Post-Training INT8 Quantization (PTQ) over Quantization-Aware Training (QAT)?"):
+                st.markdown("""
+                **Difficulty Level**: High Risk  
+                **Core Question**: Explain your quantization choice and trade-off metrics.
+                
+                #### Model Defense Answer:
+                > *"Post-Training Quantization (PTQ) converts 32-bit floating point weights ($W_{fp32}$) and activations ($X_{fp32}$) into 8-bit signed integers ($W_{int8}, X_{int8}$) using a representative calibration dataset ($N=100$ unaugmented validation images).*
+                > 
+                > *PTQ achieved a **74.8% memory compression ratio** (reducing model size from 20.3 MB down to 5.1 MB) and dropped CPU inference latency from **310 ms to 92 ms** on mobile hardware, while incurring only a minor **0.39% accuracy trade-off** (98.24% FP32 vs 97.85% INT8).*
+                > 
+                > *Because accuracy remained at 97.85%, complex Quantization-Aware Training (QAT)—which requires retraining with fake-quantization nodes—was unnecessary."*
+                
+                **Key Quantization Formula**:
+                - $r = S \\cdot (q - Z)$
+                - Scale $S = \\frac{r_{\\max} - r_{\\min}}{q_{\\max} - q_{\\min}}$, Zero Point $Z = \\text{round}\\left(-\\frac{r_{\\min}}{S}\\right) - 128$
+                """)
+
+        # Q5
+        if cat_filter in ["All Categories", "2. Model Quantization & Edge Mobile Optimization"]:
+            with st.expander("Q5: How does your system guarantee 100% offline functionality in low-connectivity rural farms?"):
+                st.markdown("""
+                **Difficulty Level**: Medium  
+                **Core Question**: Does your mobile app require internet or cloud servers to run diagnostics?
+                
+                #### Model Defense Answer:
+                > *"No cloud server or internet connection is required. The 5.1 MB quantized TFLite model (`plant_disease_model.tflite`) is compiled directly into the Flutter application assets bundle.*
+                > 
+                > *Inference is executed locally on-device using the `tflite_flutter` C++ plugin binding (`libtensorflowlite_c.so` / `.dll`). Historical diagnostic records, treatment recommendations, and farmer activity logs are stored locally in an embedded SQLite database (`sqflite`). This eliminates data subscription costs ($1.20–$3.40/month saved per farmer) and latency spikes."*
+                """)
+
+        # Q6
+        if cat_filter in ["All Categories", "3. Explainable AI (Grad-CAM) & Model Trust"]:
+            with st.expander("Q6 [Panel Favorite]: How does Grad-CAM work, and why is XAI critical in agricultural AI?"):
+                st.markdown("""
+                **Difficulty Level**: High Risk  
+                **Core Question**: Explain Grad-CAM mathematically and justify its necessity for farmers.
+                
+                #### Model Defense Answer:
+                > *"Grad-CAM computes the gradient of the predicted score $y^c$ for class $c$ with respect to feature activation maps $A^k$ of the final convolutional layer:*
+                > 
+                > $$\\alpha_k^c = \\frac{1}{Z} \\sum_i \\sum_j \\frac{\\partial y^c}{\\partial A_{i,j}^k}$$
+                > 
+                > *A weighted combination is passed through a ReLU activation: $L_{\\text{Grad-CAM}}^c = \\text{ReLU}\\left(\\sum_k \\alpha_k^c A^k\\right)$.*
+                > 
+                > *XAI is critical because agricultural extension officers and farmers distrust black-box labels. Grad-CAM visual heatmaps prove that the neural network focuses on actual chlorotic leaf spots and rust pustules rather than background noise like soil, shadows, or human hands."*
+                """)
+
+        # Q7
+        if cat_filter in ["All Categories", "4. Datasets, Augmentation & Generalization"]:
+            with st.expander("Q7: How did you prevent data leakage and handle class imbalance across 21,394 images?"):
+                st.markdown("""
+                **Difficulty Level**: Medium  
+                **Core Question**: How did you split the dataset and handle class imbalance?
+                
+                #### Model Defense Answer:
+                > *"We used an **80-10-10 stratified random split** (17,115 train, 2,139 val, 2,140 test) preserving class distributions across all 14 crop pathology categories.*
+                > 
+                > *To prevent data leakage, data augmentations (random rotation ±20°, horizontal/vertical flip, brightness jitter ±15%, zoom ±10%) were applied **strictly to training batches dynamically in memory**. Test and validation sets were kept 100% clean and unaugmented.*
+                > *Class imbalance was mitigated using class-weighted categorical cross-entropy loss weights: $w_j = \\frac{N}{K \\cdot n_j}$."*
+                """)
+
+        # Q8
+        if cat_filter in ["All Categories", "4. Datasets, Augmentation & Generalization"]:
+            with st.expander("Q8: What happens when a farmer scans an out-of-distribution (OOD) image (e.g. Cassava, Cocoa, or non-leaf)?"):
+                st.markdown("""
+                **Difficulty Level**: High Risk  
+                **Core Question**: How does the system handle non-supported crops or background photos?
+                
+                #### Model Defense Answer:
+                > *"As documented in Section 1.5 and Section 5.3 (Limitations of the Study), our model is trained on a closed set of 14 categories across Tomato and Maize.*
+                > 
+                > *To mitigate Out-of-Distribution (OOD) misclassifications, the diagnostic engine implements a **softmax confidence threshold $\\tau = 0.65$**. If $\\max(P(y|x)) < 0.65$, the system triggers an 'Uncertain / Off-Target Input' alert advising the user to reposition the camera over a clean single leaf against a clear background."*
+                """)
+
+        # Q9
+        if cat_filter in ["All Categories", "5. Software Architecture & System Usability (SUS)"]:
+            with st.expander("Q9: Explain your System Usability Scale (SUS) evaluation methodology and results."):
+                st.markdown("""
+                **Difficulty Level**: Medium  
+                **Core Question**: How did you measure user usability and what does your SUS score mean?
+                
+                #### Model Defense Answer:
+                > *"We conducted a field usability trial with **15 participants** (10 smallholder farmers and 5 agricultural extension officers).*
+                > 
+                > *Using John Brooke's (1996) standard 10-item Likert-scale questionnaire (1 = Strongly Disagree, 5 = Strongly Agree), positive item scores were computed as $(x_i - 1)$ and negative item scores as $(5 - x_i)$. The total sum was multiplied by 2.5.*
+                > 
+                > *Our system achieved a **mean SUS score of 76.5 / 100**, which corresponds to **Grade A ('Good to Excellent Usability')** on Bangor et al. (2008) acceptability scales."*
+                """)
+
+        # Q10
+        if cat_filter in ["All Categories", "5. Software Architecture & System Usability (SUS)"]:
+            with st.expander("Q10: What are the main contributions of your research to Computer Science and Agriculture?"):
+                st.markdown("""
+                **Difficulty Level**: Medium  
+                **Core Question**: Summarize your core research contributions.
+                
+                #### Model Defense Answer:
+                > *"Our research delivers three primary technical contributions:*
+                > 1. ***Architectural Innovation***: First integration of Triplet Attention with EfficientNet-B0 for sub-10MB mobile crop pathology diagnosis with 97.85% INT8 accuracy.
+                > 2. ***Explainability & Trust***: On-device Grad-CAM heatmap visualization ensuring transparent AI reasoning for non-technical farmers.
+                > 3. ***Production Mobile Engineering***: A fully offline, cross-platform Flutter application with local SQLite database schema and instant 92 ms execution."*
+                """)
+
+    with quiz_tab2:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.markdown("<h3>Interactive Mock Defense Quiz</h3>", unsafe_allow_html=True)
+        st.markdown("Test your readiness for panel questioning. Answer all 5 questions below and check your score!")
+        
+        quiz_q1 = st.radio(
+            "1. What is the parameter count and FP32 model size of EfficientNet-B0?",
+            [
+                "A) 25.6M parameters (~98 MB)",
+                "B) 5.3M parameters (~20.3 MB)",
+                "C) 138M parameters (~500 MB)",
+                "D) 1.2M parameters (~4.5 MB)"
+            ],
+            key="quiz_q1"
+        )
+        
+        quiz_q2 = st.radio(
+            "2. How does Triplet Attention avoid losing spatial fine-grained features during channel processing?",
+            [
+                "A) By applying heavy channel reduction (C/r = 16)",
+                "B) By capturing cross-dimension interactions across (C,H), (C,W), and (H,W) without channel dimensionality reduction",
+                "C) By ignoring spatial attention and computing only global average pooling",
+                "D) By using 1x1 depthwise separable max pooling"
+            ],
+            key="quiz_q2"
+        )
+        
+        quiz_q3 = st.radio(
+            "3. What model size and latency were achieved after INT8 Post-Training Quantization?",
+            [
+                "A) 15.2 MB size and 250 ms latency",
+                "B) 5.1 MB size and 92 ms latency",
+                "C) 1.5 MB size and 15 ms latency",
+                "D) 20.3 MB size and 310 ms latency"
+            ],
+            key="quiz_q3"
+        )
+        
+        quiz_q4 = st.radio(
+            "4. What mathematical layer is used at the end of Grad-CAM to ensure only positive feature activations are visualised?",
+            [
+                "A) Softmax",
+                "B) Sigmoid",
+                "C) ReLU",
+                "D) LeakyReLU"
+            ],
+            key="quiz_q4"
+        )
+        
+        quiz_q5 = st.radio(
+            "5. What System Usability Scale (SUS) score and Grade did the mobile app achieve during field testing?",
+            [
+                "A) 62.5 / 100 (Grade C - Marginal)",
+                "B) 76.5 / 100 (Grade A - Good to Excellent)",
+                "C) 88.0 / 100 (Grade A+ - Best Possible)",
+                "D) 50.0 / 100 (Grade F - Poor)"
+            ],
+            key="quiz_q5"
+        )
+        
+        if st.button("Submit Practice Quiz", key="submit_quiz_btn"):
+            score = 0
+            if quiz_q1.startswith("B"): score += 1
+            if quiz_q2.startswith("B"): score += 1
+            if quiz_q3.startswith("B"): score += 1
+            if quiz_q4.startswith("C"): score += 1
+            if quiz_q5.startswith("B"): score += 1
+            
+            percent = (score / 5) * 100
+            
+            st.markdown("<hr>", unsafe_allow_html=True)
+            if percent >= 80:
+                st.balloons()
+                st.success(f"🎉 **Defense Readiness Score: {score}/5 ({percent:.0f}%) — Excellent! You are fully prepared for panel questioning.**")
+            elif percent >= 60:
+                st.warning(f"👍 **Defense Readiness Score: {score}/5 ({percent:.0f}%) — Good job! Review the panel Q&A answers above to polish your defense.**")
+            else:
+                st.error(f"📚 **Defense Readiness Score: {score}/5 ({percent:.0f}%) — Needs Review. Study the Master Q&A Repository tab before defense.**")
+                
+        st.markdown("</div>", unsafe_allow_html=True)
