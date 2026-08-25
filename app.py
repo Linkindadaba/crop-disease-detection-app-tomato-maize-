@@ -381,15 +381,25 @@ if page == "Single Leaf Diagnosis":
     with col1:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.markdown("<h3>Upload Crop Leaf</h3>", unsafe_allow_html=True)
-        uploaded_file = st.file_uploader("Drag and drop your image here (JPG, JPEG, PNG)", type=["jpg", "jpeg", "png"])
         
-        if uploaded_file:
-            image = Image.open(uploaded_file)
-            st.image(image, caption="Uploaded Leaf Image", width="stretch")
+        input_method = st.radio("Select input method:", ["File Upload", "Live Camera"], horizontal=True, key="input_method_radio")
+        
+        image = None
+        if input_method == "File Upload":
+            uploaded_file = st.file_uploader("Drag and drop your image here (JPG, JPEG, PNG)", type=["jpg", "jpeg", "png"])
+            if uploaded_file:
+                image = Image.open(uploaded_file)
+        else:
+            camera_photo = st.camera_input("Take a photo of the leaf")
+            if camera_photo:
+                image = Image.open(camera_photo)
+        
+        if image:
+            st.image(image, caption="Leaf Image", width="stretch")
         st.markdown("</div>", unsafe_allow_html=True)
         
     with col2:
-        if uploaded_file:
+        if image:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
             st.markdown("<h3>Diagnostic Report</h3>", unsafe_allow_html=True)
             
