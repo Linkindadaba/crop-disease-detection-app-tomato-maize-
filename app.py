@@ -451,6 +451,7 @@ if page == "Single Leaf Diagnosis":
                     top_indices = np.argsort(preds)[::-1][:3]
                     top_class = CLASS_NAMES[pred_class_idx]
                     top_conf = float(preds[pred_class_idx] * 100)
+                    is_healthy = "healthy" in top_class.lower()
                     
                     # Check against selected confidence threshold
                     if top_conf < conf_threshold:
@@ -470,7 +471,6 @@ if page == "Single Leaf Diagnosis":
                         """, unsafe_allow_html=True)
                     else:
                         # Main Result Badge
-                        is_healthy = "healthy" in top_class.lower()
                         color = "#2ecc71" if is_healthy else "#e74c3c"
                         badge_text = "HEALTHY CROP" if is_healthy else "DISEASE DETECTED"
                         
