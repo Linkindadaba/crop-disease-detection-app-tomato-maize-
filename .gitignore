@@ -1,27 +1,17 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+.ipynb_checkpoints/
 
-# Virtual environments
-venv/
-.venv/
-env/
-ENV/
-image-recog/
-py_env/
+# Word temp/lock files
+~$*
+~WRL*
 
-# IDE & Editor files
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE
 .vscode/
 .idea/
-*.swp
-.DS_Store
-Thumbs.db
-
-# Project temporary backups
-*_backup.docx
-
-# Flutter build / tool artifacts if in same repo
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
