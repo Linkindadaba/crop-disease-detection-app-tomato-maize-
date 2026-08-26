@@ -560,8 +560,15 @@ elif page == "Batch Accuracy Evaluation":
     batch_images = []
     
     if batch_source == "Upload Multiple Files / Browse Folder":
+        st.markdown("""
+        <div style='background-color: #e8f5e9; border-left: 4px solid #2ecc71; padding: 10px 15px; border-radius: 6px; margin-bottom: 12px; font-size: 0.88rem; color: #2c3e50;'>
+            💡 <b>How to upload an entire folder:</b><br/>
+            • <b>Method 1 (Drag & Drop):</b> Drag your folder from your File Explorer / Finder directly onto the dropzone box below.<br/>
+            • <b>Method 2 (Multi-Select):</b> Click <i>'Browse files'</i>, navigate into your preferred folder, press <code>Ctrl + A</code> (Windows) or <code>Cmd + A</code> (Mac) to select all images, and click Open.
+        </div>
+        """, unsafe_allow_html=True)
         uploaded_batch = st.file_uploader(
-            "Browse your computer to select multiple image files or drag & drop a batch of leaf photos:",
+            "Browse your computer or drag & drop a folder of leaf photos:",
             type=["jpg", "jpeg", "png", "bmp", "webp"],
             accept_multiple_files=True,
             key="batch_file_uploader"
