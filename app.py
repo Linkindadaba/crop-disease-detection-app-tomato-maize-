@@ -540,28 +540,57 @@ if page == "Single Leaf Diagnosis":
 # --- PAGE 2: BATCH ACCURACY EVALUATION ---
 elif page == "Batch Accuracy Evaluation":
     st.markdown("<h1 class='main-title'>Batch Accuracy Evaluation & Dataset Tester</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Select a local folder or upload a batch of leaf images to evaluate multi-image predictions, accuracy metrics, and confusion matrices.</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>Evaluate multi-image batches or sample test sets, view visual accuracy charts, and verify diagnostic correctness.</p>", unsafe_allow_html=True)
     
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("<h3>Upload Batch Leaf Images</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>Select Batch Input Source</h3>", unsafe_allow_html=True)
     
-    uploaded_batch = st.file_uploader(
-        "Browse your computer to select multiple image files or drag & drop leaf photos:",
-        type=["jpg", "jpeg", "png", "bmp", "webp"],
-        accept_multiple_files=True,
-        key="batch_file_uploader"
+    batch_source = st.radio(
+        "Choose how to load your evaluation batch:",
+        [
+            "Upload Batch Files (Browser Selection)",
+            "Sample Project Test Set (Bundled Images)"
+        ],
+        horizontal=True,
+        key="batch_source_radio"
     )
     
     batch_images = []
-    if uploaded_batch:
-        st.info(f"Loaded **{len(uploaded_batch)}** files for batch evaluation.")
-        for f in uploaded_batch:
-            try:
-                img = Image.open(f)
-                batch_images.append((f.name, img))
-            except Exception:
-                pass
+    
+    if batch_source.startswith("Upload"):
+        uploaded_batch = st.file_uploader(
+            "Browse your computer to select multiple image files or drag & drop leaf photos:",
+            type=["jpg", "jpeg", "png", "bmp", "webp"],
+            accept_multiple_files=True,
+            key="batch_file_uploader"
+        )
+        if uploaded_batch:
+            st.info(f"Loaded **{len(uploaded_batch)}** files from your browser selection.")
+            for f in uploaded_batch:
+                try:
+                    img = Image.open(f)
+                    batch_images.append((f.name, img))
+                except Exception:
+                    pass
+    else:
+        # Check media directory and sample test folders
+        sample_dirs = [BASE_DIR / "media", BASE_DIR.parent / "testImages"]
+        found_paths = []
+        for sdir in sample_dirs:
+            if sdir.exists():
+                found_paths.extend([p for p in sdir.iterdir() if p.suffix.lower() in {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}])
                 
+        if found_paths:
+            st.info(f"Loaded **{len(found_paths)}** sample project test images.")
+            for p in found_paths:
+                try:
+                    img = Image.open(p)
+                    batch_images.append((p.name, img))
+                except Exception:
+                    pass
+        else:
+            st.warning("No sample project test images found.")
+            
     st.markdown("</div>", unsafe_allow_html=True)
     
     if batch_images:
@@ -569,22 +598,27 @@ elif page == "Batch Accuracy Evaluation":
             st.markdown("<div class='card'>", unsafe_allow_html=True)
             st.markdown("<h3>Evaluating Batch Images...</h3>", unsafe_allow_html=True)
             
-            # Ground truth keyword mapping for automatic ground truth matching
+            # Expanded Ground truth keyword mapping
             code_mapping = {
+                # Prefix codes from dataset
+                "rs_rust": 1, "rs_glsp": 0, "ylcv": 11, "rs_erly.b": 5, "erly.b": 5,
+                "jr_sept.l.s": 8, "sept.l.s": 8, "gh_hl": 13, "r.s_hl": 3,
+                
+                # Standard class keywords
                 "cercospora": 0, "gray_leaf": 0, "glsp": 0,
-                "rust": 1,
-                "northern": 2, "nlb": 2,
-                "r.s_hl": 3, "corn_healthy": 3, "maize_healthy": 3,
-                "bacterial": 4,
+                "rust": 1, "common_rust": 1,
+                "northern": 2, "nlb": 2, "northern_leaf_blight": 2,
+                "corn_healthy": 3, "maize_healthy": 3,
+                "bacterial": 4, "bacterial_spot": 4,
                 "erly": 5, "early_blight": 5,
                 "late_blight": 6,
                 "mold": 7, "leaf_mold": 7,
-                "septoria": 8,
+                "septoria": 8, "septoria_leaf_spot": 8,
                 "spider": 9, "spider_mites": 9,
                 "target": 10, "target_spot": 10,
-                "ylcv": 11, "yellow_leaf_curl": 11,
+                "yellow_leaf_curl": 11,
                 "mosaic": 12, "mosaic_virus": 12,
-                "gh_hl": 13, "tomato_healthy": 13, "healthy": 13
+                "tomato_healthy": 13, "healthy": 13
             }
             
             progress_bar = st.progress(0)
@@ -670,7 +704,7 @@ elif page == "Batch Accuracy Evaluation":
                 st.markdown(f"""
                 <div class='metric-card'>
                     <div class='metric-value'>{total_eval}</div>
-                    <div class='metric-label'>Total Images Processed</div>
+                    <div class='metric-label'>Total Images Evaluated</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col_m2:
@@ -695,10 +729,52 @@ elif page == "Batch Accuracy Evaluation":
                 </div>
                 """, unsafe_allow_html=True)
                 
+            # --- VISUAL CHART ANALYSIS SECTION ---
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.markdown("<h3>Batch Visual Chart Analysis</h3>", unsafe_allow_html=True)
+            
+            col_ch1, col_ch2 = st.columns(2)
+            
+            import pandas as pd
+            df_results = pd.DataFrame(detailed_results)
+            
+            with col_ch1:
+                st.markdown("#### Predicted Pathology Class Distribution")
+                pred_counts = df_results["Predicted Pathology"].value_counts().reset_index()
+                pred_counts.columns = ["Pathology", "Count"]
+                
+                fig, ax = plt.subplots(figsize=(6, 4))
+                sns.barplot(data=pred_counts, x="Count", y="Pathology", palette="Greens_r", ax=ax)
+                ax.set_xlabel("Image Count")
+                ax.set_ylabel("Predicted Class")
+                for bar in ax.patches:
+                    w = bar.get_width()
+                    ax.text(w + 0.1, bar.get_y() + bar.get_height()/2, f"{int(w)}", va='center', fontweight='bold')
+                st.pyplot(fig)
+                plt.close(fig)
+                
+            with col_ch2:
+                st.markdown("#### Diagnostic Correctness Verification Breakdown")
+                corr_counts = df_results["Correct"].value_counts().reset_index()
+                corr_counts.columns = ["Correct Verification", "Count"]
+                
+                color_map = {"Yes": "#2ecc71", "No": "#e74c3c", "N/A": "#95a5a6"}
+                bar_colors = [color_map.get(c, "#3498db") for c in corr_counts["Correct Verification"]]
+                
+                fig, ax = plt.subplots(figsize=(6, 4))
+                ax.bar(corr_counts["Correct Verification"], corr_counts["Count"], color=bar_colors)
+                ax.set_ylabel("Number of Images")
+                ax.set_xlabel("Verification Result (Matched GT vs Prediction)")
+                for bar in ax.patches:
+                    h = bar.get_height()
+                    ax.text(bar.get_x() + bar.get_width()/2, h + 0.1, f"{int(h)}", ha='center', fontweight='bold')
+                st.pyplot(fig)
+                plt.close(fig)
+                
             # Confusion Matrix (if matched labels exist)
             if matched_labels_count > 0 and len(y_true) == len(y_pred):
                 st.markdown("<hr>", unsafe_allow_html=True)
-                st.markdown("<h3>Confusion Matrix</h3>", unsafe_allow_html=True)
+                st.markdown("<h3>Evaluation Confusion Matrix Heatmap</h3>", unsafe_allow_html=True)
                 
                 unique_labels = sorted(list(set(y_true) | set(y_pred)))
                 cm = np.zeros((len(unique_labels), len(unique_labels)), dtype=int)
@@ -717,23 +793,20 @@ elif page == "Batch Accuracy Evaluation":
                     yticklabels=[CLEAN_CLASS_NAMES[i].split(" - ")[-1] for i in unique_labels],
                     ax=ax
                 )
-                plt.xlabel("Predicted Class")
+                plt.xlabel("Predicted Pathology Class")
                 plt.ylabel("True Ground Truth Class")
-                plt.title("Batch Evaluation Confusion Matrix")
+                plt.title("Batch Evaluation Set Confusion Matrix")
                 st.pyplot(fig)
                 plt.close(fig)
                 
             # Detailed Predictions Table with Download
             st.markdown("<hr>", unsafe_allow_html=True)
-            st.markdown("<h3>Detailed Batch Predictions Table</h3>", unsafe_allow_html=True)
-            
-            import pandas as pd
-            df_results = pd.DataFrame(detailed_results)
+            st.markdown("<h3>Detailed Batch Predictions & Verification Table</h3>", unsafe_allow_html=True)
             st.dataframe(df_results, use_container_width=True)
             
             csv_batch = df_results.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="Download Batch Results (.csv)",
+                label="Export Batch Evaluation Results (.csv)",
                 data=csv_batch,
                 file_name="batch_diagnostic_results.csv",
                 mime="text/csv"
