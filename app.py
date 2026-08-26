@@ -543,79 +543,25 @@ elif page == "Batch Accuracy Evaluation":
     st.markdown("<p class='subtitle'>Select a local folder or upload a batch of leaf images to evaluate multi-image predictions, accuracy metrics, and confusion matrices.</p>", unsafe_allow_html=True)
     
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("<h3>Select Batch Input Source</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>Upload Batch Leaf Images</h3>", unsafe_allow_html=True)
     
-    batch_source = st.radio(
-        "Choose how to load your evaluation batch:",
-        [
-            "Upload Multiple Files / Browse Folder",
-            "Local Directory Path (Server / Local Machine)",
-            "Sample Project Media Folder"
-        ],
-        horizontal=True,
-        key="batch_source_radio"
+    uploaded_batch = st.file_uploader(
+        "Browse your computer to select multiple image files or drag & drop leaf photos:",
+        type=["jpg", "jpeg", "png", "bmp", "webp"],
+        accept_multiple_files=True,
+        key="batch_file_uploader"
     )
     
-    # Structure to hold (filename, Image_object)
     batch_images = []
-    
-    if batch_source == "Upload Multiple Files / Browse Folder":
-        st.markdown("""
-        <div style='background-color: #e8f5e9; border-left: 4px solid #2ecc71; padding: 10px 15px; border-radius: 6px; margin-bottom: 12px; font-size: 0.88rem; color: #2c3e50;'>
-            💡 <b>How to upload an entire folder:</b><br/>
-            • <b>Method 1 (Drag & Drop):</b> Drag your folder from your File Explorer / Finder directly onto the dropzone box below.<br/>
-            • <b>Method 2 (Multi-Select):</b> Click <i>'Browse files'</i>, navigate into your preferred folder, press <code>Ctrl + A</code> (Windows) or <code>Cmd + A</code> (Mac) to select all images, and click Open.
-        </div>
-        """, unsafe_allow_html=True)
-        uploaded_batch = st.file_uploader(
-            "Browse your computer or drag & drop a folder of leaf photos:",
-            type=["jpg", "jpeg", "png", "bmp", "webp"],
-            accept_multiple_files=True,
-            key="batch_file_uploader"
-        )
-        if uploaded_batch:
-            st.info(f"Loaded **{len(uploaded_batch)}** files from your browser selection.")
-            for f in uploaded_batch:
-                try:
-                    img = Image.open(f)
-                    batch_images.append((f.name, img))
-                except Exception:
-                    pass
-                    
-    elif batch_source == "Local Directory Path (Server / Local Machine)":
-        default_dir = BASE_DIR.parent / "testImages"
-        if not default_dir.exists():
-            default_dir = BASE_DIR / "media"
-            
-        test_dir_str = st.text_input("Enter Local Directory Path:", value=str(default_dir))
-        test_dir = Path(test_dir_str)
-        
-        if test_dir.exists():
-            image_paths = [p for p in test_dir.iterdir() if p.suffix.lower() in {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}]
-            st.info(f"Found **{len(image_paths)}** images in `{test_dir}`.")
-            for p in image_paths:
-                try:
-                    img = Image.open(p)
-                    batch_images.append((p.name, img))
-                except Exception:
-                    pass
-        else:
-            st.error(f"Directory not found: `{test_dir_str}`")
-            
-    elif batch_source == "Sample Project Media Folder":
-        media_dir = BASE_DIR / "media"
-        if media_dir.exists():
-            image_paths = [p for p in media_dir.iterdir() if p.suffix.lower() in {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}]
-            st.info(f"Found **{len(image_paths)}** sample project images in `{media_dir}`.")
-            for p in image_paths:
-                try:
-                    img = Image.open(p)
-                    batch_images.append((p.name, img))
-                except Exception:
-                    pass
-        else:
-            st.warning("Sample media directory not found.")
-            
+    if uploaded_batch:
+        st.info(f"Loaded **{len(uploaded_batch)}** files for batch evaluation.")
+        for f in uploaded_batch:
+            try:
+                img = Image.open(f)
+                batch_images.append((f.name, img))
+            except Exception:
+                pass
+                
     st.markdown("</div>", unsafe_allow_html=True)
     
     if batch_images:
