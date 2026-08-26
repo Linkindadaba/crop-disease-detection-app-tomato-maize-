@@ -539,141 +539,214 @@ if page == "Single Leaf Diagnosis":
 
 # --- PAGE 2: BATCH ACCURACY EVALUATION ---
 elif page == "Batch Accuracy Evaluation":
-    st.markdown("<h1 class='main-title'>Batch Accuracy Evaluation</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Batch evaluate images in the local test directory to calculate validation metrics and view the confusion matrix.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 class='main-title'>Batch Accuracy Evaluation & Dataset Tester</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>Select a local folder or upload a batch of leaf images to evaluate multi-image predictions, accuracy metrics, and confusion matrices.</p>", unsafe_allow_html=True)
     
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    test_dir_str = st.text_input("Local Evaluation Directory Path:", value=str(BASE_DIR.parent / "testImages"))
-    test_dir = Path(test_dir_str)
+    st.markdown("<h3>Select Batch Input Source</h3>", unsafe_allow_html=True)
     
-    if st.button("Run Batch Evaluation"):
-        if not test_dir.exists():
-            st.error(f"Directory not found: {test_dir}")
-        else:
-            # Map filename codes to class indices
-            # Filename codes matching:
-            # 'GH_HL Leaf', 'R.S_HL' -> Corn/Tomato Healthy
-            # 'RS_Rust' -> Corn Common Rust
-            # 'RS_GLSp' -> Corn Cercospora Gray Leaf Spot
-            # 'YLCV' -> Tomato Yellow Leaf Curl Virus
-            # 'RS_Erly.B' -> Tomato Early Blight
-            # 'JR_Sept.L.S' -> Tomato Septoria Leaf Spot
+    batch_source = st.radio(
+        "Choose how to load your evaluation batch:",
+        [
+            "Upload Multiple Files / Browse Folder",
+            "Local Directory Path (Server / Local Machine)",
+            "Sample Project Media Folder"
+        ],
+        horizontal=True,
+        key="batch_source_radio"
+    )
+    
+    # Structure to hold (filename, Image_object)
+    batch_images = []
+    
+    if batch_source == "Upload Multiple Files / Browse Folder":
+        uploaded_batch = st.file_uploader(
+            "Browse your computer to select multiple image files or drag & drop a batch of leaf photos:",
+            type=["jpg", "jpeg", "png", "bmp", "webp"],
+            accept_multiple_files=True,
+            key="batch_file_uploader"
+        )
+        if uploaded_batch:
+            st.info(f"Loaded **{len(uploaded_batch)}** files from your browser selection.")
+            for f in uploaded_batch:
+                try:
+                    img = Image.open(f)
+                    batch_images.append((f.name, img))
+                except Exception:
+                    pass
+                    
+    elif batch_source == "Local Directory Path (Server / Local Machine)":
+        default_dir = BASE_DIR.parent / "testImages"
+        if not default_dir.exists():
+            default_dir = BASE_DIR / "media"
             
-            # Map file prefixes to expected class indices in labels.txt
+        test_dir_str = st.text_input("Enter Local Directory Path:", value=str(default_dir))
+        test_dir = Path(test_dir_str)
+        
+        if test_dir.exists():
+            image_paths = [p for p in test_dir.iterdir() if p.suffix.lower() in {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}]
+            st.info(f"Found **{len(image_paths)}** images in `{test_dir}`.")
+            for p in image_paths:
+                try:
+                    img = Image.open(p)
+                    batch_images.append((p.name, img))
+                except Exception:
+                    pass
+        else:
+            st.error(f"Directory not found: `{test_dir_str}`")
+            
+    elif batch_source == "Sample Project Media Folder":
+        media_dir = BASE_DIR / "media"
+        if media_dir.exists():
+            image_paths = [p for p in media_dir.iterdir() if p.suffix.lower() in {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}]
+            st.info(f"Found **{len(image_paths)}** sample project images in `{media_dir}`.")
+            for p in image_paths:
+                try:
+                    img = Image.open(p)
+                    batch_images.append((p.name, img))
+                except Exception:
+                    pass
+        else:
+            st.warning("Sample media directory not found.")
+            
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    if batch_images:
+        if st.button("Run Batch Evaluation Engine", key="run_batch_eval_btn"):
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            st.markdown("<h3>Evaluating Batch Images...</h3>", unsafe_allow_html=True)
+            
+            # Ground truth keyword mapping for automatic ground truth matching
             code_mapping = {
-                "rs_rust": 1, # Corn Common Rust
-                "rs_glsp": 0, # Corn Gray Leaf Spot
-                "ylcv": 11,   # Tomato Yellow Leaf Curl
-                "rs_erly.b": 5, # Tomato Early Blight
-                "jr_sept.l.s": 8, # Tomato Septoria
-                "gh_hl": 13, # Tomato Healthy (default to tomato healthy, or healthy)
-                "r.s_hl": 13 # Tomato Healthy
+                "cercospora": 0, "gray_leaf": 0, "glsp": 0,
+                "rust": 1,
+                "northern": 2, "nlb": 2,
+                "r.s_hl": 3, "corn_healthy": 3, "maize_healthy": 3,
+                "bacterial": 4,
+                "erly": 5, "early_blight": 5,
+                "late_blight": 6,
+                "mold": 7, "leaf_mold": 7,
+                "septoria": 8,
+                "spider": 9, "spider_mites": 9,
+                "target": 10, "target_spot": 10,
+                "ylcv": 11, "yellow_leaf_curl": 11,
+                "mosaic": 12, "mosaic_virus": 12,
+                "gh_hl": 13, "tomato_healthy": 13, "healthy": 13
             }
             
-            image_paths = [p for p in test_dir.iterdir() if p.suffix.lower() in {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}]
+            progress_bar = st.progress(0)
+            status_text = st.empty()
             
-            if not image_paths:
-                st.warning(f"No image files found in {test_dir}")
-            else:
-                progress_bar = st.progress(0)
-                status_text = st.empty()
+            y_true = []
+            y_pred = []
+            detailed_results = []
+            
+            correct_count = 0
+            total_eval = 0
+            matched_labels_count = 0
+            
+            for idx, (fname, img) in enumerate(batch_images):
+                fname_lower = fname.lower()
+                expected_idx = -1
                 
-                y_true = []
-                y_pred = []
-                detailed_results = []
-                
-                correct_count = 0
-                total_count = 0
-                
-                for idx, img_path in enumerate(image_paths):
-                    # Guess class index from filename
-                    fname = img_path.name.lower()
-                    expected_idx = -1
-                    for key, val in code_mapping.items():
-                        if key in fname:
-                            expected_idx = val
-                            break
-                    
-                    if expected_idx == -1:
-                        # Skip if we cannot deduce expected class for accuracy metrics
-                        continue
+                # Match filename keywords
+                for key, val in code_mapping.items():
+                    if key in fname_lower:
+                        expected_idx = val
+                        break
                         
-                    total_count += 1
+                total_eval += 1
+                
+                # Run Model Inference
+                if model_backend.startswith("Keras") and keras_model:
+                    img_tensor = preprocess_image(img, target_size=(224, 224))
+                    preds = keras_model.predict(img_tensor, verbose=0)[0]
+                    pred_idx = np.argmax(preds)
+                    conf = float(preds[pred_idx] * 100)
+                elif tflite_interpreter:
+                    img_tensor = preprocess_image(img, target_size=(224, 224))
+                    input_details = tflite_interpreter.get_input_details()
+                    output_details = tflite_interpreter.get_output_details()
+                    tflite_interpreter.set_tensor(input_details[0]['index'], img_tensor)
+                    tflite_interpreter.invoke()
+                    outputs = tflite_interpreter.get_tensor(output_details[0]['index'])[0]
+                    
+                    output_detail = output_details[0]
+                    if output_detail['dtype'] in (np.int8, np.uint8):
+                        scale, zero_point = output_detail.get('quantization', (0.0, 0))
+                        if scale > 0:
+                            outputs = (outputs.astype(np.float32) - zero_point) * scale
+                    pred_idx = np.argmax(outputs)
+                    conf = float(outputs[pred_idx] * 100)
+                else:
+                    pred_idx = -1
+                    conf = 0.0
+                    
+                is_correct = False
+                if expected_idx != -1:
+                    matched_labels_count += 1
                     y_true.append(expected_idx)
-                    
-                    image = Image.open(img_path)
-                    
-                    # Inference
-                    if model_backend.startswith("Keras") and keras_model:
-                        img_tensor = preprocess_image(image, target_size=(224, 224))
-                        preds = keras_model.predict(img_tensor, verbose=0)[0]
-                        pred_idx = np.argmax(preds)
-                    elif tflite_interpreter:
-                        img_tensor = preprocess_image(image, target_size=(224, 224))
-                        input_details = tflite_interpreter.get_input_details()
-                        output_details = tflite_interpreter.get_output_details()
-                        tflite_interpreter.set_tensor(input_details[0]['index'], img_tensor)
-                        tflite_interpreter.invoke()
-                        outputs = tflite_interpreter.get_tensor(output_details[0]['index'])[0]
-                        
-                        output_detail = output_details[0]
-                        if output_detail['dtype'] in (np.int8, np.uint8):
-                            scale, zero_point = output_detail.get('quantization', (0.0, 0))
-                            if scale > 0:
-                                outputs = (outputs.astype(np.float32) - zero_point) * scale
-                        pred_idx = np.argmax(outputs)
-                    else:
-                        pred_idx = -1
-                        
                     y_pred.append(pred_idx)
                     is_correct = (pred_idx == expected_idx)
                     if is_correct:
                         correct_count += 1
                         
-                    detailed_results.append({
-                        "File Name": img_path.name,
-                        "Ground Truth": CLEAN_CLASS_NAMES[expected_idx],
-                        "Predicted Class": CLEAN_CLASS_NAMES[pred_idx],
-                        "Correct": "Yes" if is_correct else "No"
-                    })
-                    
-                    # Update progress
-                    progress_val = int((idx + 1) / len(image_paths) * 100)
-                    progress_bar.progress(progress_val)
-                    status_text.text(f"Evaluated {idx+1}/{len(image_paths)} images...")
+                gt_text = CLEAN_CLASS_NAMES[expected_idx] if expected_idx != -1 else "Unlabelled / General Batch"
+                correct_text = "Yes" if is_correct else ("No" if expected_idx != -1 else "N/A")
                 
-                # Report Metrics
+                detailed_results.append({
+                    "File Name": fname,
+                    "Ground Truth": gt_text,
+                    "Predicted Pathology": CLEAN_CLASS_NAMES[pred_idx] if pred_idx != -1 else "Error",
+                    "Confidence": f"{conf:.1f}%",
+                    "Correct": correct_text
+                })
+                
+                progress_val = int((idx + 1) / len(batch_images) * 100)
+                progress_bar.progress(progress_val)
+                status_text.text(f"Evaluated {idx+1}/{len(batch_images)} images: {fname}")
+                
+            # Metric Summary Cards
+            st.markdown("<hr>", unsafe_allow_html=True)
+            col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+            
+            accuracy = (correct_count / matched_labels_count * 100) if matched_labels_count > 0 else 0.0
+            avg_conf = np.mean([float(r["Confidence"].replace("%", "")) for r in detailed_results]) if detailed_results else 0.0
+            
+            with col_m1:
+                st.markdown(f"""
+                <div class='metric-card'>
+                    <div class='metric-value'>{total_eval}</div>
+                    <div class='metric-label'>Total Images Processed</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_m2:
+                st.markdown(f"""
+                <div class='metric-card'>
+                    <div class='metric-value'>{matched_labels_count}</div>
+                    <div class='metric-label'>Ground Truth Matched</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_m3:
+                st.markdown(f"""
+                <div class='metric-card' style='border-left-color: #2ecc71;'>
+                    <div class='metric-value'>{accuracy:.1f}%</div>
+                    <div class='metric-label'>Matched Accuracy</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_m4:
+                st.markdown(f"""
+                <div class='metric-card' style='border-left-color: #3498db;'>
+                    <div class='metric-value'>{avg_conf:.1f}%</div>
+                    <div class='metric-label'>Avg Batch Confidence</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            # Confusion Matrix (if matched labels exist)
+            if matched_labels_count > 0 and len(y_true) == len(y_pred):
                 st.markdown("<hr>", unsafe_allow_html=True)
-                col_m1, col_m2, col_m3 = st.columns(3)
-                
-                accuracy = (correct_count / total_count * 100) if total_count > 0 else 0
-                
-                with col_m1:
-                    st.markdown(f"""
-                    <div class='metric-card'>
-                        <div class='metric-value'>{total_count}</div>
-                        <div class='metric-label'>Images Processed</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_m2:
-                    st.markdown(f"""
-                    <div class='metric-card'>
-                        <div class='metric-value'>{correct_count}</div>
-                        <div class='metric-label'>Correct Predictions</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_m3:
-                    st.markdown(f"""
-                    <div class='metric-card' style='border-left-color: #3498db;'>
-                        <div class='metric-value'>{accuracy:.2f}%</div>
-                        <div class='metric-label'>Overall Accuracy</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Confusion Matrix
                 st.markdown("<h3>Confusion Matrix</h3>", unsafe_allow_html=True)
                 
-                # Build list of active labels in this evaluation
                 unique_labels = sorted(list(set(y_true) | set(y_pred)))
                 cm = np.zeros((len(unique_labels), len(unique_labels)), dtype=int)
                 
@@ -681,7 +754,7 @@ elif page == "Batch Accuracy Evaluation":
                 for t, p in zip(y_true, y_pred):
                     cm[idx_map[t], idx_map[p]] += 1
                 
-                fig, ax = plt.subplots(figsize=(10, 8))
+                fig, ax = plt.subplots(figsize=(9, 7))
                 sns.heatmap(
                     cm, 
                     annot=True, 
@@ -692,14 +765,27 @@ elif page == "Batch Accuracy Evaluation":
                     ax=ax
                 )
                 plt.xlabel("Predicted Class")
-                plt.ylabel("True Class")
-                plt.title("Evaluation Set Confusion Matrix")
+                plt.ylabel("True Ground Truth Class")
+                plt.title("Batch Evaluation Confusion Matrix")
                 st.pyplot(fig)
+                plt.close(fig)
                 
-                # Detailed Predictions Table
-                st.markdown("<h3>Detailed Predictions</h3>", unsafe_allow_html=True)
-                st.table(detailed_results)
-    st.markdown("</div>", unsafe_allow_html=True)
+            # Detailed Predictions Table with Download
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.markdown("<h3>Detailed Batch Predictions Table</h3>", unsafe_allow_html=True)
+            
+            import pandas as pd
+            df_results = pd.DataFrame(detailed_results)
+            st.dataframe(df_results, use_container_width=True)
+            
+            csv_batch = df_results.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download Batch Results (.csv)",
+                data=csv_batch,
+                file_name="batch_diagnostic_results.csv",
+                mime="text/csv"
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # --- PAGE 3: THESIS CHAPTERS HUB ---
 elif page == "Thesis Chapters Hub":
